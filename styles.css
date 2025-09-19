@@ -615,8 +615,8 @@
 #css-selector-left-sidebar {
   position: fixed;
   top: 0;
-  left: -400px;
-  width: 400px;
+  left: -500px;
+  width: 500px;
   max-width: 90vw;
   height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -634,14 +634,14 @@
 /* Responsive design for smaller screens */
 @media (max-width: 768px) {
   #css-selector-left-sidebar {
-    width: 350px;
+    width: 450px;
     max-width: 85vw;
   }
 }
 
 @media (max-width: 480px) {
   #css-selector-left-sidebar {
-    width: 320px;
+    width: 400px;
     max-width: 80vw;
   }
 }
@@ -687,7 +687,7 @@
 
 /* When sidebar is open, move toggle button to the right edge of sidebar */
 .left-sidebar-toggle.sidebar-open {
-  left: 400px;
+  left: 500px;
   border-radius: 0 8px 8px 0;
   border-right: 1px solid rgba(255, 255, 255, 0.2);
   border-left: none;
@@ -920,32 +920,38 @@
 
 /* Edit input styles */
 .selector-edit-input {
-  width: 100%;
-  max-width: 100%;
-  background: rgba(255, 255, 255, 0.95);
-  border: 2px solid rgba(33, 150, 243, 0.6);
-  border-radius: 6px;
-  padding: 6px 8px;
-  color: #2c3e50;
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
-  box-sizing: border-box;
+  width: 100% !important;
+  max-width: 100% !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 2px solid rgba(33, 150, 243, 0.6) !important;
+  border-radius: 6px !important;
+  padding: 6px 8px !important;
+  margin: 0 !important;
+  color: #2c3e50 !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+  height: 32px !important;
+  font-family: inherit !important;
+  outline: none !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  vertical-align: middle !important;
 }
 
 .selector-edit-input:focus {
-  border-color: #2196f3;
-  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
-  background: white;
-  transform: translateY(-1px);
+  border-color: #2196f3 !important;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  background: white !important;
+  transform: translateY(-1px) !important;
 }
 
 .selector-edit-input:hover {
-  border-color: #1976d2;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  border-color: #1976d2 !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15) !important;
 }
 
 .selector-name-input {

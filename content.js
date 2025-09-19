@@ -13,6 +13,7 @@ class CSSSelectorInspector {
     this.isMouseOverPopup = false;
     this.language = 'en';
     this.savedSelectors = [];
+    this.messageListener = null; // Track message listener for cleanup
     
     // Drag and drop properties
     this.isDragging = false;
@@ -27,6 +28,9 @@ class CSSSelectorInspector {
   }
 
   async init() {
+    // Clean up any existing elements and listeners first
+    this.cleanup();
+    
     this.createPopup();
     this.createSidebar();
     this.createLeftSidebar();
@@ -40,6 +44,106 @@ class CSSSelectorInspector {
     
     this.setupMessageListener();
     this.bindEvents();
+  }
+
+  // Cleanup method to remove existing elements and listeners
+  cleanup() {
+    // Remove existing DOM elements if they exist
+    const existingPopup = document.getElementById('css-selector-popup');
+    if (existingPopup) {
+      existingPopup.remove();
+    }
+    
+    const existingSidebar = document.getElementById('css-selector-sidebar');
+    if (existingSidebar) {
+      existingSidebar.remove();
+    }
+    
+    const existingLeftSidebar = document.getElementById('css-selector-left-sidebar');
+    if (existingLeftSidebar) {
+      existingLeftSidebar.remove();
+    }
+    
+    const existingLeftSidebarToggle = document.querySelector('.left-sidebar-toggle');
+    if (existingLeftSidebarToggle) {
+      existingLeftSidebarToggle.remove();
+    }
+    
+    // Remove any existing notifications
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(notification => {
+      notification.remove();
+    });
+    
+    // Remove any existing image modals
+    const existingModals = document.querySelectorAll('.image-modal');
+    existingModals.forEach(modal => {
+      modal.remove();
+    });
+    
+    // Clear any pending timeouts
+    if (this.hoverTimeout) {
+      clearTimeout(this.hoverTimeout);
+      this.hoverTimeout = null;
+    }
+    
+    // Remove all highlights
+    this.removeAllHighlights();
+    
+    // Clear drag and drop handlers if they exist
+    if (this.mouseMoveHandler) {
+      document.removeEventListener('mousemove', this.mouseMoveHandler);
+      this.mouseMoveHandler = null;
+    }
+    if (this.mouseUpHandler) {
+      document.removeEventListener('mouseup', this.mouseUpHandler);
+      this.mouseUpHandler = null;
+    }
+    
+    // Remove message listener if it exists
+    if (this.messageListener && typeof chrome !== 'undefined' && chrome.runtime) {
+      chrome.runtime.onMessage.removeListener(this.messageListener);
+      this.messageListener = null;
+    }
+    
+    // Reset references
+    this.popup = null;
+    this.sidebar = null;
+    this.leftSidebar = null;
+    this.leftSidebarToggle = null;
+    this.currentElement = null;
+    this.isMouseOverPopup = false;
+    this.isDragging = false;
+  }
+
+  // Cleanup only UI elements (for language change)
+  cleanupUIElements() {
+    // Remove existing DOM elements if they exist
+    const existingPopup = document.getElementById('css-selector-popup');
+    if (existingPopup) {
+      existingPopup.remove();
+    }
+    
+    const existingSidebar = document.getElementById('css-selector-sidebar');
+    if (existingSidebar) {
+      existingSidebar.remove();
+    }
+    
+    const existingLeftSidebar = document.getElementById('css-selector-left-sidebar');
+    if (existingLeftSidebar) {
+      existingLeftSidebar.remove();
+    }
+    
+    const existingLeftSidebarToggle = document.querySelector('.left-sidebar-toggle');
+    if (existingLeftSidebarToggle) {
+      existingLeftSidebarToggle.remove();
+    }
+    
+    // Reset UI references
+    this.popup = null;
+    this.sidebar = null;
+    this.leftSidebar = null;
+    this.leftSidebarToggle = null;
   }
 
   // Language translations
@@ -132,7 +236,13 @@ class CSSSelectorInspector {
   // Listen for messages from popup
   setupMessageListener() {
     if (typeof chrome !== 'undefined' && chrome.runtime) {
-      chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+      // Remove existing listener if it exists
+      if (this.messageListener) {
+        chrome.runtime.onMessage.removeListener(this.messageListener);
+      }
+      
+      // Create and store the listener
+      this.messageListener = (request, sender, sendResponse) => {
         switch (request.action) {
           case 'toggle':
             this.isEnabled = request.enabled;
@@ -150,15 +260,20 @@ class CSSSelectorInspector {
             if (request.settings.language) {
               this.language = request.settings.language;
               // Recreate popup and sidebar with new language
+              this.cleanupUIElements();
               this.createPopup();
               this.createSidebar();
+              this.createLeftSidebar();
+              this.createLeftSidebarToggle();
             }
             break;
           case 'showSidebar':
             this.showSidebar();
             break;
         }
-      });
+      };
+      
+      chrome.runtime.onMessage.addListener(this.messageListener);
     }
   }
 
@@ -449,6 +564,13 @@ class CSSSelectorInspector {
       </div>
     `;
     document.body.appendChild(this.sidebar);
+  }
+
+  // Unbind existing events
+  unbindEvents() {
+    // Remove existing event listeners to prevent duplicates
+    // Note: We can't remove individual listeners without storing references
+    // But since we're cleaning up and recreating, this is handled by cleanup()
   }
 
   bindEvents() {
@@ -1421,11 +1543,28 @@ class CSSSelectorInspector {
   }
 
   enableExtension() {
+    // Ensure all UI elements exist and are properly initialized
+    if (!this.popup) {
+      this.createPopup();
+    }
+    if (!this.sidebar) {
+      this.createSidebar();
+    }
+    if (!this.leftSidebar) {
+      this.createLeftSidebar();
+    }
+    if (!this.leftSidebarToggle) {
+      this.createLeftSidebarToggle();
+    }
+    
     // Show left sidebar toggle button when enabling
     if (this.leftSidebarToggle) {
       this.leftSidebarToggle.style.display = 'flex';
       this.leftSidebarToggle.style.visibility = 'visible';
     }
+    
+    // Apply enabled state to all UI elements
+    this.applyEnabledState();
   }
 
   // Apply enabled state to UI elements
@@ -2099,5 +2238,10 @@ class CSSSelectorInspector {
   }
 }
 
-// Initialize the inspector
-const inspector = new CSSSelectorInspector();
+// Initialize the inspector with singleton pattern to prevent duplicates
+if (!window.cssSelectorInspectorInstance) {
+  window.cssSelectorInspectorInstance = new CSSSelectorInspector();
+} else {
+  // If instance already exists, reinitialize it
+  window.cssSelectorInspectorInstance.init();
+}
