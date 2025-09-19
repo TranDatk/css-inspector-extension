@@ -8,6 +8,7 @@ class CSSSelectorInspector {
     this.leftSidebar = null;
     this.leftSidebarToggle = null;
     this.isEnabled = true;
+    this.isPopupEnabled = true; // Separate flag for popup functionality
     this.hoverDelay = 1000; // 1 second
     this.isMouseOverPopup = false;
     this.language = 'en';
@@ -456,8 +457,8 @@ class CSSSelectorInspector {
     
     // Hover events for elements
     document.addEventListener('mouseover', (e) => {
-      // Early return if extension is disabled
-      if (!this.isEnabled) return;
+      // Early return if extension is disabled or popup is disabled
+      if (!this.isEnabled || !this.isPopupEnabled) return;
       
       // If hovering over popup, mark it and clear any hide timeout
       if (e.target.closest('#css-selector-popup')) {
@@ -488,8 +489,8 @@ class CSSSelectorInspector {
 
     // Mouse out events
     document.addEventListener('mouseout', (e) => {
-      // Early return if extension is disabled
-      if (!this.isEnabled) return;
+      // Early return if extension is disabled or popup is disabled
+      if (!this.isEnabled || !this.isPopupEnabled) return;
       
       // If leaving popup, mark it and set timeout to hide
       if (e.target.closest('#css-selector-popup')) {
@@ -651,6 +652,12 @@ class CSSSelectorInspector {
         const expandBtn = e.target.closest('.image-expand-btn');
         const imageSrc = expandBtn.dataset.src;
         this.openImageModal(imageSrc);
+      } else if (e.target.closest('.url-preview-btn[data-action="open-url"]')) {
+        e.preventDefault();
+        e.stopPropagation();
+        const urlBtn = e.target.closest('.url-preview-btn');
+        const url = urlBtn.dataset.url;
+        this.openUrl(url);
       }
     });
 
@@ -700,13 +707,26 @@ class CSSSelectorInspector {
 
     // Close sidebar when clicking outside
     document.addEventListener('click', (e) => {
-      if (!e.target.closest('#css-selector-sidebar') && 
-          !e.target.closest('#css-selector-popup') && 
-          !e.target.closest('#css-selector-left-sidebar') &&
-          !e.target.closest('.left-sidebar-toggle')) {
-        this.hideSidebar();
-        // Don't hide popup when clicking outside, let hover logic handle it
+      // Don't close if clicking on extension elements or dynamic content
+      if (e.target.closest('#css-selector-sidebar') || 
+          e.target.closest('#css-selector-popup') || 
+          e.target.closest('#css-selector-left-sidebar') ||
+          e.target.closest('.left-sidebar-toggle') ||
+          e.target.closest('.load-more-btn') ||
+          e.target.closest('.show-less-btn') ||
+          e.target.closest('.expand-btn') ||
+          e.target.closest('.image-expand-btn') ||
+          e.target.closest('.image-modal') ||
+          e.target.closest('.selector-action-btn') ||
+          e.target.closest('.add-selector-btn') ||
+          e.target.closest('.image-modal-backdrop') ||
+          e.target.closest('.image-modal-content') ||
+          e.target.closest('.image-modal-close')) {
+        return;
       }
+      
+      this.hideSidebar();
+      // Don't hide popup when clicking outside, let hover logic handle it
     });
 
     // Custom selector input events
@@ -812,7 +832,7 @@ class CSSSelectorInspector {
   }
 
   showPopup(element, event) {
-    if (!this.isEnabled) return;
+    if (!this.isEnabled || !this.isPopupEnabled) return;
     
     // Don't show popup if left sidebar is open
     if (this.leftSidebar && this.leftSidebar.classList.contains('show')) {
@@ -880,7 +900,7 @@ class CSSSelectorInspector {
 
   addHighlight(element) {
     // Always check if extension is enabled before adding highlight
-    if (!this.isEnabled) {
+    if (!this.isEnabled || !this.isPopupEnabled) {
       // If disabled, make sure to remove any existing highlights
       this.removeAllHighlights();
       return;
@@ -980,11 +1000,11 @@ class CSSSelectorInspector {
   showSidebar() {
     if (!this.isEnabled || !this.currentElement) return;
     
-    // Store original enabled state
-    const wasEnabled = this.isEnabled;
+    // Store original popup enabled state
+    const wasPopupEnabled = this.isPopupEnabled;
     
-    // Temporarily disable popup when sidebar is open
-    this.isEnabled = false;
+    // Temporarily disable popup when sidebar is open (but keep extension enabled)
+    this.isPopupEnabled = false;
     
     // Ensure sidebar is above modals/dialogs
     this.sidebar.style.zIndex = this.getMaxZIndex() + 3;
@@ -1009,18 +1029,20 @@ class CSSSelectorInspector {
     this.hidePopup();
     
     // Store the original state to restore later
-    this.sidebar.dataset.originalEnabled = wasEnabled;
+    this.sidebar.dataset.originalPopupEnabled = wasPopupEnabled;
   }
 
   hideSidebar() {
     this.sidebar.classList.remove('show');
-    // Restore original enabled state when sidebar is closed
-    const originalEnabled = this.sidebar.dataset.originalEnabled;
-    if (originalEnabled !== undefined) {
-      this.isEnabled = originalEnabled === 'true';
-      delete this.sidebar.dataset.originalEnabled;
+    // Restore original popup enabled state when sidebar is closed
+    const originalPopupEnabled = this.sidebar.dataset.originalPopupEnabled;
+    if (originalPopupEnabled !== undefined) {
+      this.isPopupEnabled = originalPopupEnabled === 'true';
+      delete this.sidebar.dataset.originalPopupEnabled;
+    } else {
+      // Default to true if no original state stored
+      this.isPopupEnabled = true;
     }
-    // If no original state stored, keep current enabled state
   }
 
   generateDOMTree() {
@@ -1390,10 +1412,11 @@ class CSSSelectorInspector {
     // Reset state
     this.isMouseOverPopup = false;
     this.currentElement = null;
+    this.isPopupEnabled = true; // Reset popup state
     
     // Clear any stored state
     if (this.sidebar) {
-      delete this.sidebar.dataset.originalEnabled;
+      delete this.sidebar.dataset.originalPopupEnabled;
     }
   }
 
@@ -1553,6 +1576,48 @@ class CSSSelectorInspector {
     `;
   }
 
+  // Create URL preview component for links
+  createUrlPreview(href, text) {
+    const uniqueId = `url-preview-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Validate URL
+    let isValidUrl = false;
+    let displayUrl = href;
+    try {
+      const url = new URL(href, window.location.href);
+      isValidUrl = true;
+      displayUrl = url.href;
+    } catch (e) {
+      // Invalid URL, keep original
+    }
+    
+    return `
+      <div class="url-preview" data-id="${uniqueId}">
+        <div class="url-preview-container">
+          <div class="url-preview-info">
+            <div class="url-preview-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+            </div>
+            <div class="url-preview-details">
+              <div class="url-preview-text">${text || 'Link'}</div>
+              <div class="url-preview-url ${isValidUrl ? 'valid' : 'invalid'}">${displayUrl}</div>
+            </div>
+          </div>
+          <button class="url-preview-btn" data-action="open-url" data-url="${displayUrl}" title="Open link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15,3 21,3 21,9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
   // Open image in modal
   openImageModal(src) {
     // Remove existing modal if any
@@ -1598,6 +1663,18 @@ class CSSSelectorInspector {
       }
     };
     document.addEventListener('keydown', handleEscape);
+  }
+
+  // Open URL in new tab
+  openUrl(url) {
+    try {
+      // Validate URL before opening
+      const validUrl = new URL(url, window.location.href);
+      window.open(validUrl.href, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      console.error('Invalid URL:', url);
+      this.showNotification('Invalid URL: ' + url);
+    }
   }
 
   // Render results with load more functionality
@@ -1648,6 +1725,12 @@ class CSSSelectorInspector {
           const imageAlt = isImage ? el.alt : null;
           const imagePreview = isImage && imageSrc ? this.createImagePreview(imageSrc, imageAlt) : '';
           
+          // Check if element is a link
+          const isLink = tagName === 'a';
+          const linkHref = isLink ? el.href : null;
+          const linkText = isLink ? (el.textContent || el.title || 'Link') : null;
+          const urlPreview = isLink && linkHref ? this.createUrlPreview(linkHref, linkText) : '';
+          
           return `
             <div class="selector-result-item">
               <div>
@@ -1657,6 +1740,7 @@ class CSSSelectorInspector {
               </div>
               ${textDisplay ? `<div class="selector-result-text">${textDisplay}</div>` : ''}
               ${imagePreview ? `<div class="selector-result-image">${imagePreview}</div>` : ''}
+              ${urlPreview ? `<div class="selector-result-url">${urlPreview}</div>` : ''}
             </div>
           `;
         }).join('')}
@@ -1709,6 +1793,12 @@ class CSSSelectorInspector {
             const imageAlt = isImage ? el.alt : null;
             const imagePreview = isImage && imageSrc ? this.createImagePreview(imageSrc, imageAlt) : '';
             
+            // Check if element is a link
+            const isLink = tagName === 'a';
+            const linkHref = isLink ? el.href : null;
+            const linkText = isLink ? (el.textContent || el.title || 'Link') : null;
+            const urlPreview = isLink && linkHref ? this.createUrlPreview(linkHref, linkText) : '';
+            
             return `
               <div class="preview-element">
                 <div class="preview-element-header">
@@ -1719,6 +1809,7 @@ class CSSSelectorInspector {
                 </div>
                 ${textDisplay ? `<div class="preview-element-text">${textDisplay}</div>` : ''}
                 ${imagePreview ? `<div class="preview-element-image">${imagePreview}</div>` : ''}
+                ${urlPreview ? `<div class="preview-element-url">${urlPreview}</div>` : ''}
               </div>
             `;
           }).join('')}

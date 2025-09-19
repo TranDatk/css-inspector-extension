@@ -174,3 +174,4 @@ For issues, feature requests, or questions:
 ---
 
 **Made with ❤️ for developers who love clean, reliable CSS selectors**
+

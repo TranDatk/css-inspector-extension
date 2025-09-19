@@ -386,6 +386,105 @@
   border-color: rgba(255, 255, 255, 0.5);
 }
 
+/* URL Preview Styles */
+.url-preview {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  margin-top: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.url-preview-container {
+  position: relative;
+  width: 100%;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+}
+
+.url-preview:hover .url-preview-container {
+  background: rgba(255, 255, 255, 1);
+}
+
+.url-preview-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.url-preview-icon {
+  flex-shrink: 0;
+  color: #4fc3f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.url-preview-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.url-preview-text {
+  color: #333;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.url-preview-url {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 10px;
+  line-height: 1.3;
+  word-break: break-all;
+  color: #666;
+  font-weight: 500;
+}
+
+.url-preview-url.valid {
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+.url-preview-url.invalid {
+  color: #d32f2f;
+  font-weight: 600;
+}
+
+.url-preview-btn {
+  background: rgba(79, 195, 247, 0.2);
+  border: 1px solid rgba(79, 195, 247, 0.3);
+  color: #4fc3f7;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.url-preview-btn:hover {
+  background: rgba(79, 195, 247, 0.3);
+  border-color: rgba(79, 195, 247, 0.5);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.url-preview-btn:active {
+  transform: translateY(0);
+}
+
 /* Image modal styles */
 .image-modal {
   position: fixed;
